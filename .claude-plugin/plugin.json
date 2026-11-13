@@ -1,0 +1,12 @@
+{
+  "name": "reverse-engineer-tests",
+  "description": "Reverse engineer any exam from its real past papers: question patterns, traps, and whether test-taking tricks actually earn marks, checked on held-out papers.",
+  "version": "8.0.0",
+  "author": {
+    "name": "reverse-engineer-tests authors"
+  },
+  "homepage": "https://github.com/sub7an/reverse-engineer-tests",
+  "repository": "https://github.com/sub7an/reverse-engineer-tests",
+  "license": "MIT",
+  "skills": "./skills"
+}
