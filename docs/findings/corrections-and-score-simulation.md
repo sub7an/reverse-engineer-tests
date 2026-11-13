@@ -1,5 +1,7 @@
 # Corrections, and what the answer-choice signals are really worth
 
+> **Update (v8.2):** two later tests, convergence and answer-key structure, changed part of this picture, and the held-out figures below predate them. See [convergence-and-key-structure.md](convergence-and-key-structure.md).
+
 Scaling the work up meant building two things: a one-command pipeline, and a simulation that scores the signals on tests they were not learned from. The simulation disagreed with earlier reports, and tracing the disagreement found **two errors in my earlier analysis**. This page says what was wrong, what survives, and what the surviving signals are worth in marks. The other reports have been corrected to match.
 
 ---

@@ -15,7 +15,8 @@ ret.py: one command from papers to findings.
           [--block-by block|category|section|skill] [--exclude qid,qid]
           [--drop swallowed,unconfirmed] [--scored-only] [--min-n 8]
       merge, validate, run answer DNA and the held-out score simulation.
-      Writes DIR/items.json, validation.txt, answer_dna.txt, simulation.txt.
+      Writes DIR/items.json, validation.txt, answer_dna.txt, simulation.txt,
+      key_structure.txt and report.md.
 
 A new exam costs one adapter (copy adapters/generic.py). Everything after
 ingest is shared.
@@ -92,10 +93,12 @@ def cmd_run(argv):
     min_n = ["--min-n", opt["min-n"]] if opt.get("min-n") else []
     run_script("answer_dna.py", [merged] + min_n, os.path.join(out, "answer_dna.txt"))
     run_script("simulate_score.py", [merged], os.path.join(out, "simulation.txt"))
+    run_script("key_structure.py", [merged], os.path.join(out, "key_structure.txt"))
     run_script("report.py", [merged], os.path.join(out, "report.md"))
     print("\n".join(lines[-12:]))
     print(f"\n{len(items)} items in, {len(items) - len(kept)} dropped, {len(kept)} analyzed")
-    print(f"wrote {out}/items.json, validation.txt, answer_dna.txt, simulation.txt")
+    print(f"wrote {out}/items.json, validation.txt, answer_dna.txt, simulation.txt, "
+          "key_structure.txt, report.md")
 
 
 def main():

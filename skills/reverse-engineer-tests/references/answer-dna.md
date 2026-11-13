@@ -43,7 +43,9 @@ Per block, against chance = 1 / number of choices:
 | correct overlaps most / least with the question | "the answer echoes the question" |
 | extreme words in correct vs wrong | "avoid always/never/only" |
 | hedge words in correct vs wrong | "pick the hedged answer" |
+| correct is the most / least similar to the other choices | "the odd one out is wrong" (convergence) |
 | answer-letter distribution | "when in doubt pick C" |
+| repeats and balance down the key (`key_structure.py`) | "the key is balanced, count your letters" |
 
 ## Reading the results
 
@@ -128,8 +130,10 @@ portion" was right 2/10.
 ## Third test: NY Regents ELA (33 forms, 792 reading items)
 
 No signal of any kind, and a held-out gain of exactly 0 across 33 forms.
-Across three independent test makers, **reading-comprehension items give no
-answer-choice shortcut**; expect that as the default. The shortcuts that do
+On the features tested at the time (length, word copying, extreme words),
+reading items gave no shortcut on any of three test makers. **That was
+later withdrawn for convergence** (see the fifth pass below), which works on
+SAT and ACT reading. The shortcuts that do
 exist sit in grammar and "achieve this goal" writing items. Before trusting
 a null, confirm the key is aligned (spot-check items you can answer from the
 stem alone, such as vocabulary): a misaligned key also produces a null.
@@ -149,6 +153,33 @@ in halves cuts full-width questions mid-line; the pieces look like normal
 short choices. Compare each parsed line with the same line in a full-page
 extraction (see `adapters/regents_ela.py: mark_truncated`). 8 of 792 Regents
 English items and 918 of about 5,100 content-exam items were affected.
+
+## Fifth pass: convergence and key structure (all exams, about 10,000 items)
+
+Two tests most prep advice never runs, and both found effects.
+
+**Convergence.** Writers build wrong choices by changing one part of the
+right answer, so the right answer is the choice most like the rest. On SAT
+reading skills the most-similar choice is right 34–43% and the odd one out
+11–18%; ACT Reading 37%; SAT Math 33% and 19%. Weak on Regents exams
+(28–30%), absent on Global History, ACT Math and Science, SAT punctuation.
+Held-out it added marks: SAT bank RW +6.7 blind, SAT practice-test reading
++13.0, ACT Reading +6.6. This **withdrew** the earlier conclusion that
+reading questions give no answer-choice shortcut. Lesson: a null on the
+features you tested is not a null on the features you did not.
+
+**Key structure.** Regents keys are balanced: repeat rate 13.5–19.9%
+(random is 25%), dispersion 0.04 (US History) to 0.49. "Count your sure
+answers and fill the under-used position", with the student sure of 80%,
+gains +14.3 points on the unsure questions in US History (about 1.4
+questions per exam), +9.7 Regents English, +9.0 Global History, +5.2 Living
+Environment. ACT: fewer repeats (19.8%), balance tentative. SAT: not
+balanced (dispersion 1.49); counting loses marks. Always price the realistic
+strategy; "least used so far" assumes every earlier answer is known.
+
+**Combining rules.** Rules vote with weights (log-odds on the training
+forms). The earlier combiner dropped all picks when two disagreed, which
+made adding a true signal lower the measured gain.
 
 **Group letters by letter set.** Some tests alternate choice letters (ACT:
 A–D on odd questions, F–J on even). `answer_dna.py` tests each letter set

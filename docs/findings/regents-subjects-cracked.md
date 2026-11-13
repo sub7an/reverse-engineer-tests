@@ -1,5 +1,7 @@
 # Regents US History, Global History and Living Environment: 100 exams, 4,720 questions
 
+> **Update (v8.2):** two later tests, convergence and answer-key structure, changed part of this picture, and the held-out figures below predate them. See [convergence-and-key-structure.md](convergence-and-key-structure.md).
+
 **Source:** every exam in three archives on nysedregents.org, with New York State's official scoring keys:
 
 | Subject | Exams | Years | Questions analyzed |

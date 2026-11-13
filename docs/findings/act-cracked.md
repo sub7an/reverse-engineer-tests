@@ -1,5 +1,7 @@
 # ACT: cracked, and compared with the SAT
 
+> **Update (v8.2):** two later tests, convergence and answer-key structure, changed part of this picture, and the held-out figures below predate them. See [convergence-and-key-structure.md](convergence-and-key-structure.md).
+
 **Source:** all 4 official ACT practice tests that ACT currently publishes on act.org (the enhanced ACT, 2025 onward). That's **684 questions**: English 200, Math 180, Reading 144, Science 160. Every answer and every reporting category comes from ACT's own scoring keys, and the parsed category totals match the totals ACT prints on each key exactly.
 
 The same skill and scripts used for the SAT were run on the ACT, which tests whether the skill works on "any test". Strong = p ≤ 0.01; tentative = 0.01–0.05.

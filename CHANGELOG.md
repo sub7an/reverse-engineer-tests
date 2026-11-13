@@ -1,5 +1,20 @@
 # Changelog
 
+## 8.2.0
+
+- **Convergence test**: is the right answer the choice most like the others?
+  New feature in `answer_dna.py`, the simulation and the report.
+- **Answer-key structure** (`key_structure.py`): repeat rate, balance of
+  position counts, and the value of counting strategies. Written by
+  `ret.py run` as `key_structure.txt` and section 5 of `report.md`.
+- **Weighted rule voting** in the simulation: rules that disagree no longer
+  cancel; the stronger one wins. Held-out figures change with this version.
+- **40x faster simulation**: leave-one-form-out now runs in one pass
+  (41 s to 0.7 s on 4,700 questions), with identical results.
+- **Correction:** "reading questions give no answer-choice shortcut" is
+  withdrawn. See `docs/findings/convergence-and-key-structure.md`.
+- 17 unit tests.
+
 ## 8.1.0
 
 - `ret.py run` now writes `report.md`: a verdict per trick, held-out worth,

@@ -1,5 +1,7 @@
 # SAT Question Bank: 3,767 official questions, rated by difficulty
 
+> **Update (v8.2):** two later tests, convergence and answer-key structure, changed part of this picture, and the held-out figures below predate them. See [convergence-and-key-structure.md](convergence-and-key-structure.md).
+
 **Source:** College Board's official SAT Suite Question Bank, every SAT question currently published there. That's **1,845 Reading & Writing** and **1,922 Math** questions, each with College Board's own skill label, a **difficulty rating (easy / medium / hard)**, the full question, the choices, the official answer and the official explanation. (3 of 1,925 math questions couldn't be converted.)
 
 This is about 4× the practice-test sample, and it adds what the practice tests lacked: **official difficulty**. Everything below is counted, not guessed. Strong = p ≤ 0.01; tentative = 0.01–0.05.

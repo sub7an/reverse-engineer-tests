@@ -31,15 +31,18 @@ questions in total.
 | "The longest answer is right" | Only on notes-synthesis questions (37%) | No | No | US History 33%, Living Environment 28% |
 | "In grammar, shortest is best" | **True**: shortest right 48%, longest 7% | **True**: 44% and 7% | not tested | not tested |
 | "When in doubt, pick C" | Myth | Myth (one quirk: J is right 40% on even-numbered Math) | Myth | Myth |
-| Any shortcut on reading questions | None | None | None (33 exams) | not tested |
+| "The odd one out is wrong" (the answer looks like the other choices) | **True** on reading: most-similar choice right 34–43%, odd one out 11–18% | **True** on Reading (37%) | Weak (30%) | Weak (28–29%) |
+| "The key is balanced, so count your letters" | **False**: counting loses marks | Fewer repeats than chance; balance tentative | **True** | **True**: US History uses every position almost equally |
 
-**And what it is worth:** under one extra question per exam, on every test
-analyzed. The tricks that survive are tie-breakers for a guess, not a way to
-score. The larger gains are in the other output: which skills are rated
-hard, what each question type really asks, and what makes hard questions
-hard.
+**And what it is worth:** answer-choice tricks earn 0.4 to 1 extra question
+per paper, on every test analyzed. They are tie-breakers for a guess, not a
+way to score. One exception so far: on Regents US History the answer key is
+so evenly balanced that counting your confident answers and filling the
+under-used position is worth about 1.4 questions per exam. The larger gains
+are in the other output: which skills are rated hard, what each question
+type really asks, and what makes hard questions hard.
 
-Full write-ups, including two published corrections of the project's own
+Full write-ups, including three published corrections of the project's own
 earlier claims, are in [`docs/findings/`](docs/findings/).
 
 ## Why this is different
@@ -121,7 +124,8 @@ point of measuring.
 | 1. Ingest | Paper + key become one item schema; parsing damage is flagged | `ret.py ingest`, `validate` |
 | 2. Records | One record per question: skill, trap, fastest method | — |
 | 3. Patterns | Counted skill, archetype and trap frequencies, with question ids | `tally.py` |
-| 4. Answer DNA | Tests length, word-copying, extreme and hedge words, letter balance | `answer_dna.py` |
+| 4. Answer DNA | Tests length, word-copying, extreme and hedge words, convergence, letter balance | `answer_dna.py` |
+| 4b. Key structure | Tests whether the answer key is balanced or avoids repeats, and prices counting strategies | `key_structure.py` |
 | 5. Worth | Held-out gain per signal, in guess accuracy and questions per exam | `simulate_score.py` |
 | Report | One readable Markdown report: verdicts, worth, rulebook, coverage | `report.py` |
 | 6. Difficulty | Where officially-hard questions are, and what makes them hard | `difficulty_drivers.py` |

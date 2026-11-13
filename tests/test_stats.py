@@ -12,10 +12,12 @@ from math import comb
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..",
                                 "skills", "reverse-engineer-tests", "scripts"))
 
-from answer_dna import binom_tail, choice_length, feature_scores, rank_counts  # noqa: E402
+from answer_dna import (binom_tail, choice_length, feature_scores, rank_counts,  # noqa: E402
+                        similarity)
+from key_structure import analyze as key_analyze  # noqa: E402
 from report import build  # noqa: E402
 from ret_common import make_item  # noqa: E402
-from simulate_score import ci, simulate  # noqa: E402
+from simulate_score import ci, score, simulate, weight  # noqa: E402
 from validate_items import validate  # noqa: E402
 
 
@@ -86,6 +88,72 @@ class Simulation(unittest.TestCase):
     def test_fair_exam_yields_no_rule(self):
         _, _, _, res = simulate(exam(0.0, seed=3))
         self.assertFalse(any(r[0] for v in res.values() for r in v))
+
+
+class Convergence(unittest.TestCase):
+    def test_choice_most_like_the_others_scores_highest(self):
+        ch = {"A": "the red fox runs fast", "B": "the red fox runs slow",
+              "C": "the red cat runs fast", "D": "a storm destroyed the harbour"}
+        it = item(1, ch, "A")
+        sc = feature_scores(it, similarity)
+        self.assertEqual(max(sc, key=sc.get), "A")
+        self.assertEqual(min(sc, key=sc.get), "D")
+
+    def test_short_or_placeholder_choices_are_skipped(self):
+        self.assertIsNone(feature_scores(item(1, {"A": "12", "B": "15", "C": "18", "D": "21"}, "A"),
+                                         similarity))
+        self.assertIsNone(feature_scores(
+            item(1, {"A": "NO CHANGE", "B": "walks home", "C": "walk home", "D": "walking"}, "B"),
+            similarity))
+
+
+class WeightedVote(unittest.TestCase):
+    def test_stronger_rule_wins_a_conflict(self):
+        it = item(1, {"A": "aaaa", "B": "bbbb", "C": "cccc", "D": "dddd"}, "A")
+        strong, weak = weight(60, 100, 0.25), weight(35, 100, 0.25)
+        self.assertGreater(strong, weak)
+        fired, blind, two = score(it, {"A": strong, "B": weak})
+        self.assertEqual((fired, blind), (True, 1.0))
+        self.assertEqual(two, 1.0)
+
+    def test_elimination_only_guesses_among_the_rest(self):
+        it = item(1, {"A": "aaaa", "B": "bbbb", "C": "cccc", "D": "dddd"}, "A")
+        _, blind, two = score(it, {"D": weight(5, 100, 0.25)})
+        self.assertAlmostEqual(blind, 1 / 3)
+        self.assertAlmostEqual(two, (0.5 + 0.5 + 1.0) / 3)
+
+    def test_no_votes_means_no_rule_fired(self):
+        it = item(1, {"A": "aaaa", "B": "bbbb", "C": "cccc", "D": "dddd"}, "A")
+        self.assertEqual(score(it, {}), (False, 0.25, 0.5))
+
+
+class KeyStructure(unittest.TestCase):
+    CH = {"A": "aaaa", "B": "bbbb", "C": "cccc", "D": "dddd"}
+
+    def paper(self, answers, form):
+        return [item(q, self.CH, a, form=form) for q, a in enumerate(answers, 1)]
+
+    def test_balanced_keys_are_detected(self):
+        rng, its = random.Random(5), []
+        for f in range(30):
+            key = list("ABCD" * 10)  # every position exactly 10 times
+            rng.shuffle(key)
+            its += self.paper(key, f"F{f}")
+        r = key_analyze(its)
+        self.assertLess(r["dispersion"], 0.1)
+        self.assertLessEqual(r["balance_p_low"], 0.01)
+        gain, half = r["fill80"]
+        self.assertGreater(gain - half, 0)
+
+    def test_random_keys_show_nothing(self):
+        rng, its = random.Random(6), []
+        for f in range(30):
+            its += self.paper([rng.choice("ABCD") for _ in range(40)], f"F{f}")
+        r = key_analyze(its)
+        self.assertGreater(min(r["balance_p_low"], r["balance_p_high"]), 0.01)
+        self.assertGreater(min(r["repeat_p_low"], r["repeat_p_high"]), 0.01)
+        gain, half = r["fill80"]
+        self.assertLess(abs(gain), 0.03)
 
 
 class Validation(unittest.TestCase):

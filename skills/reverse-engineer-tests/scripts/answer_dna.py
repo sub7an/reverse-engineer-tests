@@ -190,6 +190,26 @@ def has_hedge(it, text):
     return int(bool(HEDGE.search(text or "")))
 
 
+def _grams(text):
+    t = re.sub(r"\s+", " ", (text or "").lower().strip())
+    return {t[i:i + 3] for i in range(len(t) - 2)}
+
+
+def similarity(it, text):
+    """Mean character-trigram overlap (Jaccard) between this choice and each
+    other choice. Tests "convergence": item writers often build wrong choices
+    by changing one part of the right answer, which leaves the right answer
+    the choice most like the rest, and the "odd one out" rarely right.
+    None when a choice is a placeholder or too short to compare."""
+    ch = list(it["choices"].values())
+    if any(META_CHOICE.match(v or "") or len((v or "").strip()) < 4 for v in ch):
+        return None
+    g = _grams(text)
+    # `ch` includes this choice itself, whose overlap with itself is 1.
+    total = sum(len(g & o) / max(1, len(g | o)) for o in map(_grams, ch)) - 1
+    return round(total / (len(ch) - 1), 4)
+
+
 # (name, function, item field that must be non-empty for the feature to apply)
 # For the two word features, "unique HIGHEST" means the only choice that
 # contains such a word; "unique LOWEST" the only choice that does not.
@@ -198,7 +218,8 @@ FEATURES = (("length", choice_length, None),
             ("overlap with the question", goal_overlap, "stem"),
             ("numeric value", numeric_value, None),
             ("extreme word", has_extreme, None),
-            ("hedge word", has_hedge, None))
+            ("hedge word", has_hedge, None),
+            ("similarity to the other choices", similarity, None))
 
 
 def rate_line(items, rx, name):

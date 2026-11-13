@@ -71,8 +71,9 @@ confirm each against the actual paper and cite Q#s. Add new archetypes you find.
 - **Types (792 items, stem-labelled):** detail/inference 27%, purpose of a
   part 26%, device/tone 22%, central idea 14%, vocab in context 8%, best
   evidence 3%. Q24 is a central-idea question in 13/33 forms.
-- **Answer-choice signals:** none. Length, passage-word and question-overlap
-  tests all at chance; held-out gain 0 over 33 forms. Positions balanced.
+- **Answer-choice signals:** length, passage-word and question-overlap
+  tests all at chance. Convergence is weak (most-similar choice right 30%
+  pooled). The key is balanced: repeat rate 14%, dispersion 0.33.
 - **Parsing trap:** question pages are two-column; read each half-page
   separately (`pdftotext -x 0 -W 306`, then `-x 306`), or questions interleave.
 
@@ -100,6 +101,16 @@ confirm each against the actual paper and cite Q#s. Add new archetypes you find.
   archetype repeats per stimulus type.
 - **FRQ rubric points** — each point is a discrete claim+evidence; reverse the
   rubric to see what phrasing earns each point.
+
+## Cross-exam signals found by measurement (verify per exam)
+
+- **Convergence:** the right answer is the choice most like the others; the
+  odd one out is rarely right. Strong on SAT and ACT reading and SAT Math,
+  weak on Regents exams, absent on punctuation and ACT Math and Science.
+- **Balanced keys:** hand-assembled keys (all four Regents exams tested, and
+  partly the ACT) use each position about equally and avoid repeats.
+  College Board keys do not. Check with `key_structure.py` before advising
+  any counting strategy.
 
 ## Answer-choice structure (use with low default confidence)
 

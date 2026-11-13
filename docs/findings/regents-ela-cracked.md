@@ -1,5 +1,7 @@
 # New York Regents English: 33 exams, 789 questions
 
+> **Update (v8.2):** two later tests, convergence and answer-key structure, changed part of this picture, and the held-out figures below predate them. See [convergence-and-key-structure.md](convergence-and-key-structure.md).
+
 **Source:** every Regents Examination in English Language Arts published on nysedregents.org from June 2014 to August 2026: **33 exams**, each with 24 multiple-choice reading questions (Part 1), **792 questions** in total, 789 analyzed. Answers come from New York State's official scoring keys. The list of files is in `regents-evidence/sources.txt`.
 
 **Why this exam:** it has by far the largest free archive of the tests tried so far (33 forms against 8 for the SAT and 4 for the ACT), which is what a held-out check needs. The LSAT was the first choice, but official LSAT tests require an LSAC account; only one disclosed form is freely downloadable.

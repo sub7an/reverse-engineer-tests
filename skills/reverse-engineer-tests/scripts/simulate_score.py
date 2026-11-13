@@ -15,8 +15,10 @@ Method (leave-one-form-out):
        blind    the student knows nothing and must guess among all choices
        two-left the student has narrowed to the right answer plus one wrong
                 choice (each wrong choice equally likely to be the survivor)
-     Without rules the student guesses evenly. With rules they drop
-     eliminated choices and take a picked one.
+     Each rule votes for or against the choice it flags, weighted by how
+     far it moved the odds on the training forms (log-odds); the student
+     takes the highest-scoring choice, so a strong rule beats a weak one.
+     Without rules the student guesses evenly.
   3. Repeat for every form. Report the gain in guess accuracy with a 95%
      confidence interval, per block and overall, and convert it to extra
      questions right per form for students who guess on 10/20/30% of items.
@@ -34,6 +36,7 @@ for knowing the material.
 import sys
 import zlib
 from collections import defaultdict
+from math import log
 
 from answer_dna import FEATURES, binom_tail, feature_scores, rank_counts
 from ret_common import load_items
@@ -68,36 +71,50 @@ def learn(train, alpha, min_n):
     return rules
 
 
+def weight(k, n, chance):
+    """How far a rule moves the odds for the choice it flags: the log-odds of
+    "that choice is right" on the training forms minus the log-odds of
+    chance. Positive for a PICK rule, negative for an ELIMINATE rule."""
+    r = min(max(k / n, 0.5 / n), 1 - 0.5 / n)
+    return log(r / (1 - r)) - log(chance / (1 - chance))
+
+
 def apply(it, rules):
     """-> (fired?, blind accuracy, two-left accuracy) for one held-out item."""
-    ch, ans = list(it["choices"]), it["answer"]
-    elim, picks = set(), set()
-    for name, fn, high, kind, _, _ in rules:
+    votes = defaultdict(float)
+    for name, fn, high, kind, k, n in rules:
         sc = scores(it, fn)
-        if not sc:
-            continue
-        c = extreme_choice(sc, high)
+        c = extreme_choice(sc, high) if sc else None
         if c:
-            (elim if kind == "elim" else picks).add(c)
-    pick = next(iter(picks)) if len(picks) == 1 else None
-    if pick in elim:
-        pick = None
-    if not elim and not pick:
+            votes[c] += weight(k, n, 1 / len(it["choices"]))
+    return score(it, votes)
+
+
+def extremes(it):
+    """{(feature name, high?): the unique extreme choice, or None}."""
+    out = {}
+    for name, fn, _ in FEATURES:
+        sc = scores(it, fn)
+        for high in (True, False):
+            out[(name, high)] = extreme_choice(sc, high) if sc else None
+    return out
+
+
+def score(it, votes):
+    """Guess accuracy for one item. `votes` is {choice: summed rule weights};
+    unflagged choices count as 0. The student takes the highest-scoring
+    choice (ties split evenly). When rules disagree the stronger one wins,
+    instead of the rules cancelling out.
+    -> (any rule fired?, blind accuracy, two-left accuracy)."""
+    ch, ans = list(it["choices"]), it["answer"]
+    s = {c: round(votes.get(c, 0.0), 9) for c in ch}
+    if not any(s.values()):
         return False, 1 / len(ch), 0.5
-    if pick:
-        blind = 1.0 if pick == ans else 0.0
-    else:
-        cand = [c for c in ch if c not in elim] or ch
-        blind = (1 / len(cand)) if ans in cand else 0.0
-    two = 0.0
+    top = max(s.values())
+    best = [c for c in ch if s[c] == top]
+    blind = (1 / len(best)) if ans in best else 0.0
     wrong = [c for c in ch if c != ans]
-    for w in wrong:
-        if pick in (ans, w):
-            two += pick == ans
-        elif (ans in elim) != (w in elim):
-            two += w in elim
-        else:
-            two += 0.5
+    two = sum(1.0 if s[ans] > s[w] else 0.5 if s[ans] == s[w] else 0.0 for w in wrong)
     return True, blind, two / len(wrong)
 
 
@@ -136,13 +153,46 @@ def simulate(items, alpha=0.01, min_n=20):
         how = "5 folds of the question id (fewer than 2 forms)"
     else:
         how = f"{len(forms)} forms, leave-one-form-out"
-    res = defaultdict(list)  # block -> [(fired, blind gain, two gain)]
-    for f in forms:
-        rules = learn([i for i in items if i["form"] != f], alpha, min_n)
-        for it in (i for i in items if i["form"] == f):
-            b = it.get("block") or "all"
-            fired, blind, two = apply(it, rules.get(b, []))
-            res[b].append((fired, blind - 1 / len(it["choices"]), two - 0.5))
+    # Each item's unique extreme choice per feature is computed once. The
+    # counts for "every form but f" are then the totals minus form f's own
+    # counts, so the whole leave-one-out pass is linear in the number of
+    # items instead of items x forms (40 s -> under 2 s on 4,700 questions).
+    ext = [extremes(it) for it in items]
+    tot, per = defaultdict(lambda: [0, 0, None]), defaultdict(lambda: [0, 0])
+    for it, d in zip(items, ext):
+        b, f = it.get("block") or "all", it.get("form") or ""
+        for key, c in d.items():
+            if c is None:
+                continue
+            hit = c == it["answer"]
+            t, p = tot[(b,) + key], per[(f, b) + key]
+            t[0] += hit
+            t[1] += 1
+            t[2] = 1 / len(it["choices"])
+            p[0] += hit
+            p[1] += 1
+    res, rules = defaultdict(list), {}  # block -> [(fired, blind gain, two gain)]
+    for it, d in zip(items, ext):
+        b, f = it.get("block") or "all", it.get("form") or ""
+        if (f, b) not in rules:
+            rs = rules[(f, b)] = []
+            for name, _, _ in FEATURES:
+                for high in (True, False):
+                    k, n, chance = tot.get((b, name, high), (0, 0, None))
+                    pk, pn = per.get((f, b, name, high), (0, 0))
+                    k, n = k - pk, n - pn
+                    if n < min_n:
+                        continue
+                    if binom_tail(k, n, chance, upper=False) <= alpha:
+                        rs.append((name, high, weight(k, n, chance)))
+                    elif binom_tail(k, n, chance) <= alpha:
+                        rs.append((name, high, weight(k, n, chance)))
+        votes = defaultdict(float)
+        for name, high, wt in rules[(f, b)]:
+            if d[(name, high)]:
+                votes[d[(name, high)]] += wt
+        fired, blind, two = score(it, votes)
+        res[b].append((fired, blind - 1 / len(it["choices"]), two - 0.5))
     return items, forms, how, res
 
 

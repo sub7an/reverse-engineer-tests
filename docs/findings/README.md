@@ -4,6 +4,11 @@ Start with **[corrections-and-score-simulation.md](corrections-and-score-simulat
 what survived the held-out check, what was withdrawn, and what the surviving
 signals are worth in marks.
 
+Then **[convergence-and-key-structure.md](convergence-and-key-structure.md)**:
+two later tests that found new signals, including the first one on reading
+questions and the first strategy worth more than one question per exam.
+Held-out figures in the older reports below predate these tests.
+
 | Report | Data |
 |---|---|
 | [sat-question-bank.md](sat-question-bank.md) | College Board SAT Question Bank, 3,292 multiple-choice questions |

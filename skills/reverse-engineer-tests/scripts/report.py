@@ -18,6 +18,8 @@ import sys
 from collections import Counter, defaultdict
 
 from answer_dna import FEATURES, binom_tail, letter_line, rank_counts
+from key_structure import analyze as key_analyze
+from key_structure import lines as key_lines
 from ret_common import load_items
 from simulate_score import ci, learn, simulate
 
@@ -34,6 +36,8 @@ CLAIM = {
     ("extreme word", False): "The only choice without an extreme word",
     ("hedge word", True): "The only choice with a hedge word (may, some, often)",
     ("hedge word", False): "The only choice without a hedge word",
+    ("similarity to the other choices", True): "The choice most like the other choices",
+    ("similarity to the other choices", False): "The odd one out (least like the other choices)",
 }
 
 
@@ -149,7 +153,18 @@ def build(items, alpha=0.01, min_n=15):
     # 4. letters
     out += ["## 4. Answer positions", "", "```", letter_line(usable), "```", ""]
 
-    # footer
+    # 5. key structure
+    exams_n = len({i.get("exam") for i in usable})
+    ks = key_analyze(usable) if how.endswith("leave-one-form-out") else None
+    if ks and ks.get("pairs", 0) >= 100:
+        out += ["## 5. Is the answer key itself predictable?", "",
+                "Counts the sequence of correct positions down each paper. A random "
+                "key repeats the previous position 1 time in " + str(ks["k"]) + " and "
+                "has a dispersion of 1.00; hand-balanced keys repeat less and score "
+                "below 1.", "", "```"] + key_lines(ks)[1:] + ["```", ""]
+        if exams_n > 1:
+            out += ["Several exams are pooled here; run each exam alone for its own figures.", ""]
+
     src = Counter(i.get("answer_source") or "official" for i in usable)
     out += ["---", "",
             f"Coverage: {len(usable)} analyzed / {total - len(usable)} skipped "

@@ -2,7 +2,7 @@
 name: reverse-engineer-tests
 description: Reverse engineer any test or exam from its real past papers into evidence-backed patterns — SAT, ACT, AP, GRE, GMAT, LSAT, state exams, school finals, mock papers, certification and licensing exams, any multiple-choice or short-answer set. Use whenever the user wants to crack a test, decode question patterns, find recurring traps or answer-choice tells, check whether a test-taking trick really works ("is the longest answer usually right?"), learn where the marks and the hard questions are, analyze an official question bank, build practice questions like the real ones, or make a strategy cheatsheet — even if they never say "reverse engineer". Input is PDFs (scanned ones too, via OCR) or pasted text. Every claim comes with counts, cited question ids and a held-out check of what it is worth in marks. This is document and pattern analysis; it is NOT for reverse engineering software, binaries, apps or APKs.
 metadata:
-  version: "8.1"
+  version: "8.2"
 compatibility: Needs python3 (standard library only) and pdftotext (poppler) for PDFs. Uses the `pdf` skill for OCR of scanned pages when available.
 ---
 
@@ -60,8 +60,8 @@ python3 scripts/ret.py validate f1.json f2.json      # fix the parse until clean
 python3 scripts/ret.py run f1.json f2.json --out out/
 ```
 
-`run` writes `validation.txt`, `answer_dna.txt`, `simulation.txt` and
-`report.md`, a readable report with a verdict per trick, held-out worth, a
+`run` writes `validation.txt`, `answer_dna.txt`, `simulation.txt`,
+`key_structure.txt` and `report.md`, a readable report with a verdict per trick, held-out worth, a
 rulebook and the coverage footer. Start the user-facing write-up from
 `report.md`, then add what only reading the questions can tell. Give
 each paper its own `--form`; held-out scoring needs 2+ forms, and more forms
@@ -136,8 +136,9 @@ python3 scripts/answer_dna.py items.json      # ret.py run does this too
 ```
 
 It tests choice length, copying of passage words, echo of the question,
-numeric value, extreme words (always, never, only), hedge words (may, some)
-and answer-letter balance, with exact p-values. Call p ≤ 0.01 strong,
+numeric value, extreme words (always, never, only), hedge words (may, some),
+convergence (is the right answer the choice most like the others, and the
+odd one out wrong?) and answer-letter balance, with exact p-values. Call p ≤ 0.01 strong,
 0.01–0.05 tentative, and state how many checks ran, because about 1 in 20
 crosses 0.05 by luck. Needs full question text and 15+ questions per type;
 pool as many papers as exist.
@@ -146,6 +147,20 @@ Then mine what statistics cannot reach, by counting stems and correct
 choices: the relationship each transition question tests, the goal each
 "which choice accomplishes…" question names, the rule each grammar question
 tests.
+
+**Also test the key itself.** Hand-assembled keys are often balanced: each
+position used about equally, few back-to-back repeats. Then the answers a
+student is sure of predict the rest.
+
+```bash
+python3 scripts/key_structure.py items.json   # ret.py run does this too
+```
+
+It reports the repeat rate, the dispersion of position counts (1.00 is
+random, below 1 is over-balanced) and the value of "count your sure answers,
+fill the under-used position". Run it per exam, on real papers in printed
+order, never on a question bank. New York Regents keys are strongly
+balanced; SAT keys are not, and counting loses marks there. Say which.
 
 Do not carry a verdict from one test family to another. Extreme words
 predict nothing on the SAT, ACT and reading tests, yet mark wrong answers on
@@ -163,8 +178,10 @@ gain with a 95% interval and the extra questions right per form.
 
 - Report every answer-choice signal with its held-out gain, or not at all.
 - State the gain in marks for a realistic student, who guesses on a minority
-  of questions. Every exam analyzed so far came out under one question per
-  test. Say that plainly; do not oversell.
+  of questions. Answer-choice signals have come out at 0.4 to 1 question per
+  paper on every exam so far. Say that plainly; do not oversell.
+- When several rules flag different choices they vote, weighted by how far
+  each moved the odds on the training papers, so the stronger rule wins.
 - If the simulation and the p-values disagree, trust the simulation and look
   for a counting error. That disagreement is how a tie-counting bug was
   found.
@@ -258,6 +275,7 @@ redistribute question text.
 - `scripts/blocks.py` — question-type labels from stems (SAT Reading & Writing, ACT English).
 - `scripts/tally.py` — counts with qid citations (Phase 3).
 - `scripts/answer_dna.py` — signal tests (Phase 4).
+- `scripts/key_structure.py` — repeats and balance in the answer key, and what counting is worth (Phase 4).
 - `scripts/simulate_score.py` — held-out value of each signal (Phase 5).
 - `scripts/report.py` — readable Markdown report from the same computations (`ret.py run` writes it as `report.md`).
 - `scripts/difficulty_drivers.py` — where hard questions are and why (Phase 6).
