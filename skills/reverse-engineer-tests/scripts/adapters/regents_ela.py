@@ -77,8 +77,9 @@ def parse_key(path):
     return old
 
 
-def parse_exam(path, max_q=24):
+def parse_exam(path, max_q=24, numbers=None):
     items, passage, cur, last, mode, seen_q = [], [], None, None, "text", False
+    order = sorted(numbers) if numbers else list(range(1, max_q + 1))
     for p in range(1, _pages(path) + 1):
         cols = _pdf(path, p, 0) + "\n" + _pdf(path, p, 306)
         is_q = len(re.findall(r"(?m)^\([1-4]\)", cols)) >= 3
@@ -94,12 +95,23 @@ def parse_exam(path, max_q=24):
         lines = cols.split("\n")
         for n, line in enumerate(lines):
             s = line.strip()
-            nxt = len(items) + 1
-            ready = cur is None or len(cur["choices"]) >= 2
+            # Question numbers that may start here. Normally just the next
+            # one. With `numbers` (the key's multiple-choice numbers) also the
+            # next keyed number, so a run of written-answer questions (which
+            # never get choices) does not stall the parse. A question missing
+            # from the key is still opened, so its text is not glued onto the
+            # question before it.
+            after = items[-1]["q"] if items else 0
+            cands = {after + 1, next((x for x in order if x > after), 0)} if numbers \
+                else {after + 1}
+            cands = {c for c in cands if 0 < c <= max_q}
+            ready = (cur is None or len(cur["choices"]) >= 2
+                     or (numbers is not None and cur["q"] not in numbers))
+            nxt = int(s) if s.isdigit() and int(s) in cands else None
             # The question number can sit alone on its line. Accept it only
             # if choices follow before the next bare number (passage line
             # markers such as 5, 10, 15 look the same).
-            if s == str(nxt) and nxt <= max_q and ready:
+            if nxt and ready:
                 ahead = [l.strip() for l in lines[n + 1:n + 14] if l.strip()]
                 stop = next((k for k, l in enumerate(ahead) if l.isdigit()), len(ahead))
                 if any(l.startswith("(1)") for l in ahead[:stop]):
@@ -117,13 +129,13 @@ def parse_exam(path, max_q=24):
             # the last choice.
             if FOOTER.search(s) and len(s) < 60:
                 continue
-            if re.match(r"^(Base your answers? to|Directions)", s):
+            if re.match(r"^(Base your answers? to|Directions|Note: )", s):
                 mode = "text"
                 continue
             m = Q.match(s)
             # "ready" stops a wrapped stem such as "...lines 9 through / 11
             # conveys" from being read as the start of question 11.
-            if m and int(m.group(1)) == nxt and nxt <= max_q and ready:
+            if m and int(m.group(1)) in cands and ready:
                 cur = {"q": int(m.group(1)), "stem": m.group(2), "choices": {},
                        "passage": " ".join(passage), "page": p}
                 items.append(cur)
@@ -198,7 +210,7 @@ def mark_truncated(path, items):
             elif not t:
                 if len(choices) == 4:
                     break
-            elif FOOTER.search(t) or re.match(r"^(Base your answers? to|\d{1,2}\s+[A-Z“])", t):
+            elif FOOTER.search(t) or re.match(r"^(Base your answers? to|Directions|Note: |\d{1,2}\s+[A-Z“])", t):
                 break
             elif last:
                 choices[last] += " " + t

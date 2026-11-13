@@ -134,11 +134,11 @@ exist sit in grammar and "achieve this goal" writing items. Before trusting
 a null, confirm the key is aligned (spot-check items you can answer from the
 stem alone, such as vocabulary): a misaligned key also produces a null.
 
-## Fourth test: Regents content exams (100 forms, 4,424 items)
+## Fourth test: Regents content exams (100 forms, 4,720 items)
 
 The opposite of the reading result. On US History and Living Environment the
 classic tips hold and survive held-out scoring: only-choice-with-an-extreme-
-word right 8–9%, only-hedged-choice right about 50%, longest right 28–33%.
+word right 8%, only-hedged-choice right about 50%, longest right 28–33%.
 So "extreme words are a myth" is true of SAT, ACT and reading tests, not of
 tests in general. `answer_dna.py` now tests the word features per item
 ("the only choice with such a word"), which is far more sensitive than the

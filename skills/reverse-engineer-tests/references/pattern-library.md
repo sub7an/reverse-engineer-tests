@@ -81,8 +81,8 @@ confirm each against the actual paper and cite Q#s. Add new archetypes you find.
 - **Archives:** nysedregents.org, 25–45 public forms per subject with keys
   (adapter: `regents-mc`, pass the subject with `--exam`). 50 MC per history
   exam; Living Environment has about 52, some mixed into later parts.
-- **Folklore works here** (100 forms, 4,424 items, confirmed held-out): the
-  only choice with an extreme word is right 8–9% (US History, Living
+- **Folklore works here** (100 forms, 4,720 items, confirmed held-out): the
+  only choice with an extreme word is right 8% (US History, Living
   Environment); the only hedged choice is right 49–64% (all three); the
   longest choice is right 33% in US History and 28% in Living Environment.
   Global History shows only the hedge effect. Held-out gain: US History +7

@@ -1,7 +1,7 @@
 {
   "name": "reverse-engineer-tests",
   "description": "Reverse engineer any exam from its real past papers: question patterns, traps, and whether test-taking tricks actually earn marks, checked on held-out papers.",
-  "version": "8.0.0",
+  "version": "8.1.0",
   "author": {
     "name": "reverse-engineer-tests authors"
   },

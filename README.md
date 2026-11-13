@@ -21,12 +21,12 @@ Global History: longest choice is right — 26%, no signal
 
 ## What it found so far
 
-Run on 145 official exams and one official question bank, about 9,700
+Run on 145 official exams and one official question bank, about 10,000
 questions in total.
 
 | Claim | SAT | ACT | NY Regents English | NY Regents History & Science |
 |---|---|---|---|---|
-| "Avoid *always*, *never*, *only*" | Myth | Myth | Myth | **True**: right 8–9% of the time (chance 25%) |
+| "Avoid *always*, *never*, *only*" | Myth | Myth | Myth | **True**: right 8% of the time (chance 25%) |
 | "Pick the hedged answer (*may*, *some*)" | Myth | Myth | Myth | **True**: right 49–64% |
 | "The longest answer is right" | Only on notes-synthesis questions (37%) | No | No | US History 33%, Living Environment 28% |
 | "In grammar, shortest is best" | **True**: shortest right 48%, longest 7% | **True**: 44% and 7% | not tested | not tested |
@@ -96,16 +96,19 @@ for i in 1 2 3 4; do
   python3 $S/ret.py ingest generic examples/demo/form$i.txt examples/demo/key$i.txt --form D$i -o /tmp/d$i.json
 done
 python3 $S/ret.py run /tmp/d1.json /tmp/d2.json /tmp/d3.json /tmp/d4.json --out /tmp/demo-out
-cat /tmp/demo-out/simulation.txt
+cat /tmp/demo-out/report.md
 ```
 
 ```
-block      n  rule fires   blind guess gain      two-left gain
-S1       160       100%   +46.2 pts ± 7.0 *    +30.9 pts ± 5.1 *
+| Trick               | Right            | Chance | Verdict                  |
+| The longest choice  | 114 of 160 (71%) | 25%    | **Above chance** (strong) |
+| The shortest choice | 15 of 160 (9%)   | 25%    | **Below chance** (strong) |
 
-## Rulebook learned from all forms
-  S1   PICK      the choice with the highest length: correct 114/160 (71%)
-  S1   ELIMINATE the choice with the lowest length: correct 15/160 (9%)
+| Question type | Rule applies | Blind guess | Two choices left | Established |
+| All questions | 100%         | +46.2 ±7.0  | +30.9 ±5.1       | yes         |
+
+- **Favour** the longest choice: it was right 114 of 160 times (71%).
+- **Cross out** the shortest choice: it was right 15 of 160 times (9%).
 ```
 
 A real, professionally built exam gives a much smaller number. That is the
@@ -120,6 +123,7 @@ point of measuring.
 | 3. Patterns | Counted skill, archetype and trap frequencies, with question ids | `tally.py` |
 | 4. Answer DNA | Tests length, word-copying, extreme and hedge words, letter balance | `answer_dna.py` |
 | 5. Worth | Held-out gain per signal, in guess accuracy and questions per exam | `simulate_score.py` |
+| Report | One readable Markdown report: verdicts, worth, rulebook, coverage | `report.py` |
 | 6. Difficulty | Where officially-hard questions are, and what makes them hard | `difficulty_drivers.py` |
 | 7–8. Output | Practice questions built on the real traps; a one-page cheatsheet | — |
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## 8.1.0
+
+- `ret.py run` now writes `report.md`: a verdict per trick, held-out worth,
+  a plain-language rulebook and the coverage footer (`scripts/report.py`).
+- Unit tests for the statistics (`tests/test_stats.py`): exact tail
+  probabilities, tie handling, placeholder choices, the simulation on a
+  planted flaw and on a fair exam, the glued-text check.
+- `regents-mc`: the parser no longer stops at the first written-answer
+  question. Living Environment coverage rose from 1,732 to 2,028 of 2,305
+  questions; findings updated (same direction, slightly larger held-out
+  gain). "Note:" lines are no longer glued onto the last choice.
+
 ## 8.0.0
 
 - Packaged as a public repository and Claude Code plugin.

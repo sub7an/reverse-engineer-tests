@@ -2,7 +2,7 @@
 name: reverse-engineer-tests
 description: Reverse engineer any test or exam from its real past papers into evidence-backed patterns — SAT, ACT, AP, GRE, GMAT, LSAT, state exams, school finals, mock papers, certification and licensing exams, any multiple-choice or short-answer set. Use whenever the user wants to crack a test, decode question patterns, find recurring traps or answer-choice tells, check whether a test-taking trick really works ("is the longest answer usually right?"), learn where the marks and the hard questions are, analyze an official question bank, build practice questions like the real ones, or make a strategy cheatsheet — even if they never say "reverse engineer". Input is PDFs (scanned ones too, via OCR) or pasted text. Every claim comes with counts, cited question ids and a held-out check of what it is worth in marks. This is document and pattern analysis; it is NOT for reverse engineering software, binaries, apps or APKs.
 metadata:
-  version: "8"
+  version: "8.1"
 compatibility: Needs python3 (standard library only) and pdftotext (poppler) for PDFs. Uses the `pdf` skill for OCR of scanned pages when available.
 ---
 
@@ -60,7 +60,10 @@ python3 scripts/ret.py validate f1.json f2.json      # fix the parse until clean
 python3 scripts/ret.py run f1.json f2.json --out out/
 ```
 
-`run` writes `validation.txt`, `answer_dna.txt` and `simulation.txt`. Give
+`run` writes `validation.txt`, `answer_dna.txt`, `simulation.txt` and
+`report.md`, a readable report with a verdict per trick, held-out worth, a
+rulebook and the coverage footer. Start the user-facing write-up from
+`report.md`, then add what only reading the questions can tell. Give
 each paper its own `--form`; held-out scoring needs 2+ forms, and more forms
 give tighter intervals. For a test with no adapter, start with `generic`. If
 `validate` shows gaps, copy `scripts/adapters/generic.py` into a
@@ -256,4 +259,5 @@ redistribute question text.
 - `scripts/tally.py` — counts with qid citations (Phase 3).
 - `scripts/answer_dna.py` — signal tests (Phase 4).
 - `scripts/simulate_score.py` — held-out value of each signal (Phase 5).
+- `scripts/report.py` — readable Markdown report from the same computations (`ret.py run` writes it as `report.md`).
 - `scripts/difficulty_drivers.py` — where hard questions are and why (Phase 6).

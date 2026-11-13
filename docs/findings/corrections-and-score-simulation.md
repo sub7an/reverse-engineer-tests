@@ -73,7 +73,7 @@ Unchanged and unaffected: everything about structure, question types, where hard
 
 **33 New York Regents English exams (789 reading questions):** no rule reaches the threshold in any of 33 held-out rounds. Gain **0**. See `regents-ela-cracked.md`.
 
-**100 Regents content exams (US History, Global History, Living Environment; 4,424 questions):** here the classic tips do hold. US History **+7.3** blind (±2.3), **+6.0** two-left (±1.8); Living Environment +2.2 two-left (±1.4); Global History under +1. See `regents-subjects-cracked.md`.
+**100 Regents content exams (US History, Global History, Living Environment; 4,720 questions):** here the classic tips do hold. US History **+7.3** blind (±2.3), **+6.0** two-left (±1.8); Living Environment +3.3 two-left (±1.4); Global History under +1. See `regents-subjects-cracked.md`.
 
 **Conclusion.** The answer-choice signals are real but small, and they live in three question types: verb/agreement, notes synthesis and (ACT) grammar. They are tie-breakers for a handful of questions, not a way to score. State content exams leak more than the national tests, but still under one question per exam. The marks are in the other findings: which skills are hard, what each question type asks, and what makes hard questions hard.
 

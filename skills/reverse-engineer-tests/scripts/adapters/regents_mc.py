@@ -20,7 +20,7 @@ def parse(inputs, form, opts):
         raise SystemExit("usage: " + USAGE)
     key = parse_key(inputs[1])
     n = max(key) if key else 0
-    raw = {i["q"]: i for i in parse_exam(inputs[0], n)}
+    raw = {i["q"]: i for i in parse_exam(inputs[0], n, numbers=key)}
     exam = opts.get("exam") or "Regents"
     cut = [q for q in raw if raw[q].get("truncated")]
     for q in cut:  # full-width questions, damaged by the two-column read

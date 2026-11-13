@@ -92,6 +92,7 @@ def cmd_run(argv):
     min_n = ["--min-n", opt["min-n"]] if opt.get("min-n") else []
     run_script("answer_dna.py", [merged] + min_n, os.path.join(out, "answer_dna.txt"))
     run_script("simulate_score.py", [merged], os.path.join(out, "simulation.txt"))
+    run_script("report.py", [merged], os.path.join(out, "report.md"))
     print("\n".join(lines[-12:]))
     print(f"\n{len(items)} items in, {len(items) - len(kept)} dropped, {len(kept)} analyzed")
     print(f"wrote {out}/items.json, validation.txt, answer_dna.txt, simulation.txt")

@@ -118,7 +118,15 @@ def main():
     opt = lambda name, d: (float(sys.argv[sys.argv.index(name) + 1])
                            if name in sys.argv else d)
     alpha, min_n = opt("--alpha", 0.01), int(opt("--min-n", 20))
-    items = [i for p in args for i in load_items(p)
+    items = [i for p in args for i in load_items(p)]
+    items, forms, how, res = simulate(items, alpha, min_n)
+    report(items, forms, how, res, alpha, min_n)
+
+
+def simulate(items, alpha=0.01, min_n=20):
+    """Leave-one-form-out. -> (usable items, forms, description of the split,
+    {block: [(rule fired?, blind gain, two-left gain)]})."""
+    items = [i for i in items
              if i.get("choices") and i.get("answer") in i["choices"] and len(i["choices"]) >= 3]
     forms = sorted({i.get("form") or "" for i in items})
     if len(forms) < 2:
@@ -135,6 +143,10 @@ def main():
             b = it.get("block") or "all"
             fired, blind, two = apply(it, rules.get(b, []))
             res[b].append((fired, blind - 1 / len(it["choices"]), two - 0.5))
+    return items, forms, how, res
+
+
+def report(items, forms, how, res, alpha, min_n):
     print(f"# Score simulation: {len(items)} items, {how}")
     print(f"# rules need p <= {alpha} on at least {min_n} training items\n")
     print(f"{'block':30} {'n':>5} {'rule fires':>10}  {'blind guess gain':>22}  "

@@ -19,4 +19,7 @@ grep -q "length: correct is the unique HIGHEST.*PICK SIGNAL (strong)" "$T/out/an
 grep -Eq "^ALL .*\+[0-9.]+ pts ± [0-9.]+ \*" "$T/out/simulation.txt"
 grep -q "PICK      the choice with the highest length" "$T/out/simulation.txt"
 
+grep -q "Favour\*\* the longest choice" "$T/out/report.md"
+grep -q "Coverage: 160 analyzed / 0 skipped" "$T/out/report.md"
+
 echo "smoke test passed"
