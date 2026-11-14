@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Reverse Engineer Tests</title>
+<style>
+  :root {
+    --ground: #e9edec; --sheet: #fbfcfb; --ink: #13201e; --ink-2: #47585a;
+    --line: #c9d2cf; --line-2: #dde3e1; --accent: #1b49c8; --accent-ink: #ffffff;
+    --up: #0b6f54; --up-bg: #dff1ea; --down: #a83c15; --down-bg: #f8e4da;
+    --none-bg: #e6ebe9; --warn-bg: #fff3d6; --warn: #6b4a00;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --ease: cubic-bezier(.16, 1, .3, 1);
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--ground); }
+  body { margin: 0; font: 15px/1.5 var(--sans); color: var(--ink); background: var(--ground);
+         -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, p { margin: 0; }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: .93em; }
+
+  .bar { display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+         flex-wrap: wrap; padding: 14px 24px; border-bottom: 1px solid var(--line); }
+  .bar h1 { font-size: 16px; font-weight: 680; letter-spacing: -.01em; }
+  .bar p { color: var(--ink-2); font-size: 13px; }
+
+  .bench { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+           gap: 24px; padding: 24px; max-width: 1320px; margin: 0 auto; align-items: start; }
+  @media (max-width: 880px) { .bench { grid-template-columns: 1fr; padding: 16px; gap: 16px; } }
+
+  /* ---- sample tray ---- */
+  .tray { position: sticky; top: 16px; display: grid; gap: 16px; }
+  @media (max-width: 880px) { .tray { position: static; } }
+  .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .field input[type=text] { width: 100%; padding: 9px 11px; background: var(--sheet);
+         border: 1px solid var(--line); border-radius: 6px; }
+  .field input[type=text]::placeholder { color: #5d6e6b; }
+  .drop { display: grid; justify-items: center; gap: 6px; padding: 26px 16px; text-align: center;
+          background: var(--sheet); border: 1.5px dashed #93a3a0; border-radius: 8px; cursor: pointer;
+          transition: border-color .2s var(--ease), background .2s var(--ease); }
+  .drop:hover, .drop.over { border-color: var(--accent); background: #f1f5ff; }
+  .drop svg { color: var(--accent); }
+  .drop strong { font-weight: 650; }
+  .drop span { color: var(--ink-2); font-size: 13px; max-width: 32ch; }
+  .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+  .samples { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .sample { display: grid; grid-template-columns: 34px minmax(0, 1fr) 28px; gap: 4px 10px;
+            align-items: center; padding: 10px; background: var(--sheet);
+            border: 1px solid var(--line); border-radius: 6px; }
+  .sample .slot { grid-row: span 2; align-self: start; font-family: var(--mono); font-size: 12px;
+                  color: var(--ink-2); padding-top: 2px; }
+  .sample .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
+  .sample .key { grid-column: 2; font-size: 13px; color: var(--ink-2); overflow: hidden;
+                 text-overflow: ellipsis; white-space: nowrap; }
+  .sample .key button { padding: 0; border: 0; background: none; color: var(--accent);
+                        text-decoration: underline; cursor: pointer; }
+  .sample .key.missing { color: var(--warn); }
+  .icon { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0;
+          border-radius: 5px; background: none; color: var(--ink-2); cursor: pointer; grid-row: 1; grid-column: 3; }
+  .icon:hover { background: var(--none-bg); color: var(--ink); }
+
+  .go { width: 100%; padding: 12px 16px; border: 0; border-radius: 6px; cursor: pointer;
+        background: var(--accent); color: var(--accent-ink); font-weight: 650;
+        transition: background .2s var(--ease), transform .12s var(--ease); }
+  .go:hover:not(:disabled) { background: #163da8; }
+  .go:active:not(:disabled) { transform: translateY(1px); }
+  .go:disabled { background: #a9b6c9; cursor: not-allowed; }
+  .note { font-size: 13px; color: var(--ink-2); }
+  .msg { padding: 10px 12px; border-radius: 6px; font-size: 14px; }
+  .msg.error { background: var(--down-bg); color: #6d2409; }
+  .msg.warn { background: var(--warn-bg); color: var(--warn); }
+
+  /* ---- assay sheet ---- */
+  .sheet { position: relative; background: var(--sheet); border: 1px solid var(--line);
+           border-radius: 8px; padding: 28px 32px 32px; min-height: 420px; overflow: hidden;
+           box-shadow: 0 1px 2px rgba(19, 32, 30, .05), 0 8px 24px -12px rgba(19, 32, 30, .18); }
+  @media (max-width: 880px) { .sheet { padding: 20px 16px 24px; } }
+  .sheet h2 { font-size: 26px; line-height: 1.2; font-weight: 700; letter-spacing: -.02em;
+              text-wrap: balance; }
+  .sheet h3 { font-size: 17px; font-weight: 680; margin: 36px 0 6px; }
+  .sheet h4 { font-size: 14px; font-weight: 650; margin: 22px 0 4px; }
+  .sheet .lede { color: var(--ink-2); max-width: 68ch; margin-top: 6px; }
+  .sheet .explain { color: var(--ink-2); max-width: 70ch; font-size: 14px; }
+  .papers { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .chip { font-size: 12.5px; padding: 3px 9px; border-radius: 99px; background: var(--none-bg);
+          color: var(--ink-2); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip.bad { background: var(--down-bg); color: #6d2409; }
+
+  .rows { margin-top: 10px; border-top: 1px solid var(--line-2); }
+  .row { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(140px, 1fr) 118px 150px;
+         gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line-2); }
+  .row .count { text-align: right; white-space: nowrap; }
+  @media (max-width: 1080px) {
+    .row { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; }
+    .row .gauge { grid-column: 1 / -1; grid-row: 2; }
+    .row .count { grid-column: 1; grid-row: 3; text-align: left; }
+    .row .tag { grid-column: 2; grid-row: 3; justify-self: end; }
+  }
+  .gauge { position: relative; height: 22px; }
+  .gauge .track { position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: var(--line); }
+  .gauge .band { position: absolute; top: 7px; height: 8px; border-radius: 2px; background: var(--c); opacity: .28; }
+  .gauge .needle { position: absolute; top: 3px; width: 3px; height: 16px; margin-left: -1.5px;
+                   border-radius: 1px; background: var(--c);
+                   transition: left .9s var(--ease); }
+  .gauge .chance { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed var(--ink); opacity: .55; }
+  .up { --c: var(--up); } .down { --c: var(--down); } .flat { --c: #62736f; }
+  .tag { justify-self: start; font-size: 12.5px; font-weight: 600; padding: 3px 9px; border-radius: 4px;
+         white-space: nowrap; background: var(--none-bg); color: var(--ink-2); }
+  .tag.up2 { background: var(--up); color: #fff; } .tag.up1 { background: var(--up-bg); color: var(--up); }
+  .tag.down2 { background: var(--down); color: #fff; } .tag.down1 { background: var(--down-bg); color: var(--down); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 13px; color: var(--ink-2); }
+  .legend i { display: inline-block; vertical-align: -2px; margin-right: 6px; }
+  .legend .l-chance { width: 0; height: 14px; border-left: 1.5px dashed var(--ink); opacity: .55; }
+  .legend .l-needle { width: 3px; height: 14px; background: var(--up); border-radius: 1px; }
+  .legend .l-band { width: 22px; height: 8px; background: var(--up); opacity: .28; border-radius: 2px; }
+
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 14px; }
+  th { text-align: left; font-weight: 600; font-size: 12.5px; color: var(--ink-2); padding: 6px 12px 6px 0;
+       border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line-2); vertical-align: top; }
+  td.r, th.r { text-align: right; white-space: nowrap; }
+  td:last-child, th:last-child { padding-right: 0; }
+  .scroll table { min-width: 560px; }
+  .scroll { overflow-x: auto; }
+  .marks { margin-top: 14px; padding: 14px 16px; background: #eef2fd; border-radius: 6px; max-width: 72ch; }
+  .rules { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; max-width: 74ch; }
+  .rules li { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+  .rules b { font-weight: 650; }
+  @media (max-width: 560px) { .rules li { grid-template-columns: 1fr; gap: 0; } }
+  pre { margin: 10px 0 0; padding: 12px 14px; background: #f1f4f3; border-radius: 6px; overflow-x: auto;
+        font: 12.5px/1.6 var(--mono); color: var(--ink); white-space: pre-wrap; }
+  details { margin-top: 28px; } summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  .foot { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px;
+          color: var(--ink-2); display: grid; gap: 2px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+  .ghost { padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--sheet);
+           cursor: pointer; font-weight: 550; font-size: 14px; }
+  .ghost:hover { border-color: var(--ink-2); }
+
+  /* the one authored motion: a scan line crosses the sheet while papers are read */
+  .scan { position: absolute; left: 0; right: 0; top: 0; height: 100%; pointer-events: none; opacity: 0;
+          background: linear-gradient(to bottom, transparent 0, rgba(27, 73, 200, .10) 46%,
+                      rgba(27, 73, 200, .55) 50%, transparent 50.6%);
+          background-size: 100% 220%; }
+  .sheet.busy .scan { opacity: 1; animation: scan 1.7s linear infinite; }
+  .sheet.busy > :not(.scan) { opacity: .45; transition: opacity .3s var(--ease); }
+  @keyframes scan { from { background-position: 0 120%; } to { background-position: 0 -20%; } }
+  @media (prefers-reduced-motion: reduce) {
+    .sheet.busy .scan { animation: none; background: rgba(27, 73, 200, .06); }
+    .gauge .needle { transition: none; }
+  }
+  @media print {
+    html, body { background: #fff; } .bar, .tray, .actions, details { display: none; }
+    .bench { display: block; padding: 0; } .sheet { border: 0; box-shadow: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<!--
+DIRECTION  Lab instrument: an assay sheet for exam papers. The page is a bench: a sample tray
+           on the left, the printed result on the right.
+MODE       Operate. A student or tutor at a desk in daylight; light, cool-grey ground.
+COLOR      Restrained. Ink on instrument grey, one cobalt accent for actions; green and rust
+           appear only as measurement results.
+TYPE       System sans for reading; monospace only for measured numbers.
+SIGNATURE  Every trick is a gauge: a dashed chance line, a needle at the measured rate, a band
+           for its uncertainty. A scan line crosses the sheet while papers are read.
+-->
+<header class="bar">
+  <h1>Reverse Engineer Tests</h1>
+  <p>Runs on this machine. Uploaded papers are deleted as soon as the analysis finishes.</p>
+</header>
+
+<main class="bench">
+  <section class="tray" aria-label="Papers to analyze">
+    <div class="field">
+      <label for="exam">Exam name</label>
+      <input id="exam" type="text" maxlength="80" placeholder="For example: Year 11 Biology finals" autocomplete="off">
+    </div>
+
+    <label class="drop" id="drop">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+      <strong>Add past papers and their answer keys</strong>
+      <span>Drop files here or choose them. PDF, Word (.docx) or text. Keys are matched to papers by file name.</span>
+      <input id="files" type="file" multiple accept=".pdf,.docx,.txt,.md">
+    </label>
+
+    <ul class="samples" id="samples" aria-label="Papers added"></ul>
+    <input id="keyfile" type="file" accept=".pdf,.docx,.txt,.md" hidden>
+
+    <div id="traymsg" role="status" aria-live="polite"></div>
+    <button class="go" id="go" disabled>Analyze papers</button>
+    <p class="note">Use past, released or practice papers only. More papers give firmer results: one paper can show only very large effects, and checking a result on unseen papers needs at least two.</p>
+  </section>
+
+  <section class="sheet" id="sheet" aria-live="polite" aria-busy="false">
+    <div class="scan" aria-hidden="true"></div>
+    <div id="out"></div>
+  </section>
+</main>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const KEYWORD = /(answers?|keys?|scoring|mark\s*-?_?schemes?|markscheme|solutions?|(^|[^a-z])(ms|ans)([^a-z]|$))/i;
+const samples = [];   // {paper: File, key: File|null}
+let lastMarkdown = "", pickFor = null;
+
+function el(tag, attrs, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") n.className = v;
+    else if (k === "style") n.style.cssText = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) if (kid != null) n.append(kid);
+  return n;
+}
+const svg = (d) => {
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("width", "16"); s.setAttribute("height", "16");
+  s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor");
+  s.setAttribute("stroke-width", "1.8"); s.setAttribute("stroke-linecap", "round"); s.setAttribute("aria-hidden", "true");
+  for (const p of d) { const e = document.createElementNS(s.namespaceURI, "path"); e.setAttribute("d", p); s.append(e); }
+  return s;
+};
+const pct = (x, d = 0) => (x * 100).toFixed(d) + "%";
+const signed = (x) => (x >= 0 ? "+" : "−") + Math.abs(x * 100).toFixed(1);
+const tokens = (name) => name.toLowerCase().replace(/\.[a-z0-9]+$/, "").replace(KEYWORD, " ").split(/[^a-z0-9]+/).filter(Boolean);
+
+/* ---------- tray ---------- */
+function addFiles(list) {
+  const files = [...list].filter((f) => /\.(pdf|docx|txt|md)$/i.test(f.name));
+  const skipped = list.length - files.length;
+  for (const f of files.filter((f) => !KEYWORD.test(f.name))) samples.push({ paper: f, key: null });
+  for (const k of files.filter((f) => KEYWORD.test(f.name))) {
+    const open = samples.filter((s) => !s.key);
+    if (!open.length) { samples.push({ paper: k, key: null }); continue; }
+    const kt = new Set(tokens(k.name));
+    let best = open[0], score = -1;
+    for (const s of open) {
+      const sc = tokens(s.paper.name).filter((t) => kt.has(t)).length;
+      if (sc > score) { best = s; score = sc; }
+    }
+    best.key = k;
+  }
+  drawTray(skipped ? `${skipped} file${skipped > 1 ? "s were" : " was"} skipped: only PDF, Word (.docx) and text files can be read.` : "");
+}
+
+function drawTray(warning) {
+  const ul = $("samples");
+  ul.replaceChildren(...samples.map((s, i) => el("li", { class: "sample" },
+    el("span", { class: "slot" }, "P" + (i + 1)),
+    el("span", { class: "name", title: s.paper.name }, s.paper.name),
+    el("button", { class: "icon", "aria-label": "Remove " + s.paper.name, onclick: () => { samples.splice(i, 1); drawTray(); } },
+      svg(["M6 6l12 12", "M18 6 6 18"])),
+    s.key
+      ? el("span", { class: "key", title: s.key.name }, "Key: " + s.key.name + " ",
+          el("button", { onclick: () => { s.key = null; drawTray(); } }, "remove"))
+      : el("span", { class: "key missing" }, "No key file. ",
+          el("button", { onclick: () => { pickFor = s; $("keyfile").click(); } }, "Add key"),
+          " or leave it if the key is inside the paper.")
+  )));
+  $("go").disabled = !samples.length;
+  $("go").textContent = samples.length > 1 ? `Analyze ${samples.length} papers` : "Analyze paper" + (samples.length ? "" : "s");
+  $("traymsg").replaceChildren(warning ? el("p", { class: "msg warn" }, warning) : "");
+}
+
+$("files").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+$("keyfile").addEventListener("change", (e) => {
+  if (pickFor && e.target.files[0]) pickFor.key = e.target.files[0];
+  pickFor = null; e.target.value = ""; drawTray();
+});
+const drop = $("drop");
+for (const ev of ["dragenter", "dragover"]) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); });
+for (const ev of ["dragleave", "drop"]) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); });
+drop.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => e.preventDefault());
+
+const read = (file) => new Promise((ok, fail) => {
+  const r = new FileReader();
+  r.onload = () => ok({ name: file.name, data: String(r.result).split(",")[1] || "" });
+  r.onerror = () => fail(new Error(`"${file.name}" could not be read from disk.`));
+  r.readAsDataURL(file);
+});
+
+$("go").addEventListener("click", async () => {
+  const sheet = $("sheet"), go = $("go");
+  go.disabled = true; go.textContent = "Reading papers…";
+  sheet.classList.add("busy"); sheet.setAttribute("aria-busy", "true");
+  $("traymsg").replaceChildren();
+  try {
+    const body = { exam: $("exam").value, samples: [] };
+    for (const s of samples) body.samples.push({ paper: await read(s.paper), key: s.key ? await read(s.key) : null });
+    const res = await fetch("/api/crack", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({ error: "The server sent an unreadable reply. Check that it is still running." }));
+    if (!res.ok) throw new Error(data.error || "The analysis failed.");
+    drawReport(data);
+    if (window.matchMedia("(max-width: 880px)").matches) sheet.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    const lost = err instanceof TypeError;
+    $("traymsg").replaceChildren(el("p", { class: "msg error" },
+      lost ? "The server did not answer. Start it again with `ret.py serve`, then retry." : err.message));
+  } finally {
+    sheet.classList.remove("busy"); sheet.setAttribute("aria-busy", "false");
+    drawTray();
+  }
+});
+
+/* ---------- gauge ---------- */
+function wilson(k, n) {
+  const z = 1.96, p = k / n, d = 1 + z * z / n;
+  const c = (p + z * z / (2 * n)) / d, h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d;
+  return [Math.max(0, c - h), Math.min(1, c + h)];
+}
+function gauge(k, n, chance, level) {
+  const rate = k / n, [lo, hi] = wilson(k, n);
+  const cls = level.startsWith("up") ? "up" : level.startsWith("down") ? "down" : "flat";
+  const needle = el("span", { class: "needle", style: `left:${chance * 100}%` });
+  requestAnimationFrame(() => requestAnimationFrame(() => { needle.style.left = rate * 100 + "%"; }));
+  return el("div", { class: "gauge " + cls, role: "img",
+      "aria-label": `Right ${pct(rate)} of the time; chance is ${pct(chance)}; likely range ${pct(lo)} to ${pct(hi)}` },
+    el("span", { class: "track" }),
+    el("span", { class: "band", style: `left:${lo * 100}%;width:${(hi - lo) * 100}%` }),
+    el("span", { class: "chance", style: `left:${chance * 100}%` }),
+    needle);
+}
+const TAGS = { up2: "Above chance", up1: "Above, tentative", down2: "Below chance", down1: "Below, tentative", none: "No signal" };
+const trickRow = (r) => el("div", { class: "row" },
+  el("span", {}, r.claim),
+  gauge(r.k, r.n, r.chance, r.level),
+  el("span", { class: "count num" }, `${r.k} of ${r.n} · ${pct(r.k / r.n)}`),
+  el("span", { class: "tag " + r.level }, TAGS[r.level]));
+
+/* ---------- report ---------- */
+function intro() {
+  $("out").replaceChildren(
+    el("h2", {}, "Do the tricks work on your exam? Measure it."),
+    el("p", { class: "lede" }, "Add past papers with their answer keys. Every test-taking trick is counted against the real answers, then checked on papers it was not learned from."),
+    el("h3", {}, "How to read a result"),
+    el("p", { class: "explain" }, "Each trick gets a gauge from 0% to 100%. This one is an illustration, not data from an exam."),
+    el("div", { class: "rows" },
+      trickRow({ claim: "The longest choice", k: 132, n: 400, chance: 0.25, level: "up2" }),
+      trickRow({ claim: "The only choice with an extreme word (always, never, only)", k: 9, n: 96, chance: 0.25, level: "down2" }),
+      trickRow({ claim: "The choice echoing the question most", k: 31, n: 118, chance: 0.25, level: "none" })),
+    legend(),
+    el("p", { class: "explain", style: "margin-top:14px" }, "A needle far from the dashed line, with a band that does not touch it, is a real effect. A needle near the line is a myth for that exam."));
+}
+const legend = () => el("div", { class: "legend" },
+  el("span", {}, el("i", { class: "l-chance" }), "chance (a blind guess)"),
+  el("span", {}, el("i", { class: "l-needle" }), "how often that choice was right"),
+  el("span", {}, el("i", { class: "l-band" }), "95% range"));
+
+function drawReport(data) {
+  const out = [], r = data.report;
+  lastMarkdown = data.markdown || "";
+  out.push(el("h2", {}, r ? `${r.title}: what the answer choices give away` : `${data.exam}: nothing could be analyzed`));
+  out.push(el("p", { class: "lede" }, r
+    ? `${r.questions} multiple-choice questions from ${data.papers.length} paper${data.papers.length > 1 ? "s" : ""}. Checked on unseen questions using ${r.how}.`
+    : data.problem));
+  out.push(el("div", { class: "papers" }, data.papers.map((p) =>
+    el("span", { class: "chip" + (p.usable ? "" : " bad"), title: p.name }, `${p.form} · ${p.name} · ${p.usable} of ${p.found} usable`))));
+  if (r) {
+    if (r.questions < 150) out.push(el("p", { class: "msg warn", style: "margin-top:16px;max-width:72ch" },
+      `Only ${r.questions} questions. That is enough to show very large effects and nothing else. Add more past papers of the same exam before trusting a "no signal".`));
+    const flagged = Object.entries(data.flags || {}).filter(([k]) => ["swallowed", "choices", "answer-missing", "duplicate"].includes(k));
+    if (flagged.length) out.push(el("p", { class: "msg warn", style: "margin-top:10px;max-width:72ch" },
+      "Some questions look damaged by the file's layout (" + flagged.map(([k, v]) => `${v} ${k}`).join(", ") + "). Results may be slightly off; the reading log below has details."));
+
+    out.push(el("h3", {}, "Do the tricks work?"));
+    out.push(el("p", { class: "explain" }, "Each row counts only questions where one choice clearly is the longest, the only hedged one, and so on."));
+    out.push(legend());
+    for (const b of r.blocks) {
+      if (r.multi) out.push(el("h4", {}, `${b.name} `, el("span", { class: "num", style: "font-weight:400;color:var(--ink-2)" }, `${b.n} questions`)));
+      out.push(b.rows.length ? el("div", { class: "rows" }, b.rows.map(trickRow))
+        : el("p", { class: "explain" }, `Too few questions to test (fewer than ${r.min_n} per trick).`));
+    }
+
+    out.push(el("h3", {}, "What it is worth"));
+    out.push(el("p", { class: "explain" }, "Rules were learned on some questions and scored on others they never saw. Gain is percentage points of guess accuracy over an even guess, with a 95% range."));
+    const wr = (w, strong) => el("tr", {},
+      el("td", { style: strong ? "font-weight:650" : "" }, w.label), el("td", { class: "r num" }, String(w.n)),
+      el("td", { class: "r num" }, w.fired ? pct(w.fired) : "never"),
+      el("td", { class: "r num" }, w.fired ? `${signed(w.blind[0])} ±${(w.blind[1] * 100).toFixed(1)}` : "0"),
+      el("td", { class: "r num" }, w.fired ? `${signed(w.two[0])} ±${(w.two[1] * 100).toFixed(1)}` : "0"),
+      el("td", {}, el("span", { class: "tag " + (w.established ? "up2" : "none") }, w.established ? "Established" : w.fired ? "Not established" : "No rule")));
+    out.push(el("div", { class: "scroll" }, el("table", {},
+      el("thead", {}, el("tr", {}, el("th", {}, "Question type"), el("th", { class: "r" }, "Questions"), el("th", { class: "r" }, "Rule applies"),
+        el("th", { class: "r" }, "Blind guess"), el("th", { class: "r" }, "Two choices left"), el("th", {}, "Held-out"))),
+      el("tbody", {}, r.worth.map((w) => wr(w)), r.all ? wr(r.all, true) : null))));
+    const a = r.all;
+    out.push(el("p", { class: "marks" }, a && a.fired
+      ? `In marks: a paper has about ${Math.round(r.per_form)} of these questions. A student who must guess on 1 in 5 of them gains about ${(0.2 * r.per_form * a.two[0]).toFixed(1)} questions per paper when stuck between two choices, and ${(0.2 * r.per_form * a.blind[0]).toFixed(1)} on blind guesses. The rules help only on questions that would otherwise be guessed.`
+      : "In marks: no rule reached the threshold. Gain: 0. On these papers the answer choices give nothing away, so the marks are in knowing the material."));
+
+    out.push(el("h3", {}, "Rulebook"));
+    out.push(r.rules.length
+      ? el("ul", { class: "rules" }, r.rules.map((x) => el("li", {}, el("b", {}, x.verb),
+          el("span", {}, x.claim.charAt(0).toLowerCase() + x.claim.slice(1) + (x.where ? ` on ${x.where} questions` : "") + ". ",
+            el("span", { class: "num" }, `Right ${x.k} of ${x.n} (${pct(x.k / x.n)}).`)))))
+      : el("p", { class: "explain" }, "No rule to use."));
+    if (r.rules.length) out.push(el("p", { class: "explain", style: "margin-top:10px" }, "Use a rule only as a tie-breaker for a guess, and only where the table above says Established."));
+
+    if (r.key_lines && r.key_lines.length) {
+      out.push(el("h3", {}, "Is the answer key itself predictable?"));
+      out.push(el("p", { class: "explain" }, `A random key repeats the previous position 1 time in ${r.key.k} and has a dispersion of 1.00. Keys balanced by hand repeat less and score below 1, and then the answers you are sure of say something about the rest.`));
+      out.push(el("div", { class: "rows" }, trickRow({ claim: "Same position as the previous question", k: r.key.repeats, n: r.key.pairs, chance: 1 / r.key.k,
+        level: r.key.repeat_p_low <= 0.01 ? "down2" : r.key.repeat_p_high <= 0.01 ? "up2" : r.key.repeat_p_low <= 0.05 ? "down1" : r.key.repeat_p_high <= 0.05 ? "up1" : "none" })));
+      const k = r.key, gain = (g) => g ? `${signed(g[0])} ±${(g[1] * 100).toFixed(1)}` : "not measured";
+      const real = (g) => g && g[0] - g[1] > 0;
+      const kr = (name, value, reading) => el("tr", {}, el("td", {}, name), el("td", { class: "r num" }, value), el("td", {}, reading));
+      out.push(el("div", { class: "scroll" }, el("table", {},
+        el("thead", {}, el("tr", {}, el("th", {}, "Measure"), el("th", { class: "r" }, "Value"), el("th", {}, "Reading"))),
+        el("tbody", {},
+          k.dispersion == null ? null : kr("Dispersion of position counts", k.dispersion.toFixed(2),
+            k.balance_p_low <= 0.01 ? "Over-balanced: each position is used about equally."
+              : k.balance_p_low <= 0.05 ? "Possibly balanced (tentative)." : "Consistent with a random key."),
+          kr("Count your sure answers, fill the under-used position (sure of 80%)", gain(k.fill80),
+            real(k.fill80) ? "Earns marks on the questions you are unsure of." : "Not established on these papers."),
+          kr("The same, sure of 50%", gain(k.fill50),
+            real(k.fill50) ? "Earns marks on the questions you are unsure of." : "Not established on these papers.")))));
+      out.push(el("p", { class: "explain", style: "margin-top:10px" }, "Gains are percentage points of guess accuracy on the unsure questions. They assume the answers you call sure are right."));
+    }
+    out.push(el("h3", {}, "Answer positions"));
+    out.push(el("pre", {}, (r.letters || "").trim()));
+    out.push(el("div", { class: "actions" },
+      el("button", { class: "ghost", onclick: download }, "Download report (.md)"),
+      el("button", { class: "ghost", onclick: () => window.print() }, "Print")));
+  }
+  out.push(el("details", {}, el("summary", {}, "Reading log"), el("pre", {}, (data.log || []).join("\n") || "Nothing was logged.")));
+  if (r) out.push(el("div", { class: "foot" },
+    el("span", {}, `Coverage: ${r.questions} analyzed, ${r.total - r.questions} skipped (no choices, fewer than 3 choices, or no matching key answer).`),
+    el("span", {}, `Checks run: ${r.checks}. Expect about ${(r.checks * 0.05).toFixed(1)} to cross p = 0.05 by luck; "Above" and "Below chance" mean p ≤ ${r.alpha}.`),
+    el("span", {}, "These are statistics about the papers you uploaded, not answers to any exam.")));
+  $("out").replaceChildren(...out);
+}
+
+function download() {
+  const a = el("a", { href: URL.createObjectURL(new Blob([lastMarkdown], { type: "text/markdown" })), download: "exam-report.md" });
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+intro(); drawTray();
+</script>
+</body>
+</html>

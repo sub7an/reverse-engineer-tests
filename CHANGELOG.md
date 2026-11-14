@@ -1,5 +1,17 @@
 # Changelog
 
+## 8.3.0
+
+- **`auto` adapter**: reads a paper in a layout it has never seen (numbering
+  and choice styles, choices on one line, embedded keys, per-question answer
+  lines, sections, PDF / Word / text), and hands SAT, ACT and NY Regents
+  papers to their own adapters. 13 layout tests.
+- **Upload page** (`ret.py serve`): drop papers and keys in a browser, get
+  the report with a gauge per trick. Local by default, files deleted after
+  each request. `Dockerfile` for hosting.
+- `report.py` split into `analyze()` (data) and `render()` (Markdown).
+- `.docx` input, standard library only.
+
 ## 8.2.0
 
 - **Convergence test**: is the right answer the choice most like the others?

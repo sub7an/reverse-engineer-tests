@@ -9,7 +9,7 @@ T=$(mktemp -d)
 
 python3 examples/make_demo.py "$T/demo" >/dev/null
 for i in 1 2 3 4; do
-  python3 $S/ret.py ingest generic "$T/demo/form$i.txt" "$T/demo/key$i.txt" \
+  python3 $S/ret.py ingest auto "$T/demo/form$i.txt" "$T/demo/key$i.txt" \
     --form D$i --exam Demo -o "$T/d$i.json" >/dev/null
 done
 python3 $S/ret.py run "$T"/d[1-4].json --out "$T/out" >/dev/null

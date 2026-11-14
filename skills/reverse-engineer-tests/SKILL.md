@@ -2,7 +2,7 @@
 name: reverse-engineer-tests
 description: Reverse engineer any test or exam from its real past papers into evidence-backed patterns — SAT, ACT, AP, GRE, GMAT, LSAT, state exams, school finals, mock papers, certification and licensing exams, any multiple-choice or short-answer set. Use whenever the user wants to crack a test, decode question patterns, find recurring traps or answer-choice tells, check whether a test-taking trick really works ("is the longest answer usually right?"), learn where the marks and the hard questions are, analyze an official question bank, build practice questions like the real ones, or make a strategy cheatsheet — even if they never say "reverse engineer". Input is PDFs (scanned ones too, via OCR) or pasted text. Every claim comes with counts, cited question ids and a held-out check of what it is worth in marks. This is document and pattern analysis; it is NOT for reverse engineering software, binaries, apps or APKs.
 metadata:
-  version: "8.2"
+  version: "8.3"
 compatibility: Needs python3 (standard library only) and pdftotext (poppler) for PDFs. Uses the `pdf` skill for OCR of scanned pages when available.
 ---
 
@@ -54,8 +54,8 @@ fast methods with `references/analysis-method.md`.
 one run:
 
 ```bash
-python3 scripts/ret.py adapters        # sat-digital, act-enhanced, cb-qbank, regents-ela, regents-mc, generic
-python3 scripts/ret.py ingest <adapter> <paper> <key> --form F1 -o f1.json
+python3 scripts/ret.py adapters        # auto, sat-digital, act-enhanced, cb-qbank, regents-ela, regents-mc, generic
+python3 scripts/ret.py ingest auto <paper> [key] --form F1 --exam "Name" -o f1.json
 python3 scripts/ret.py validate f1.json f2.json      # fix the parse until clean
 python3 scripts/ret.py run f1.json f2.json --out out/
 ```
@@ -65,9 +65,22 @@ python3 scripts/ret.py run f1.json f2.json --out out/
 rulebook and the coverage footer. Start the user-facing write-up from
 `report.md`, then add what only reading the questions can tell. Give
 each paper its own `--form`; held-out scoring needs 2+ forms, and more forms
-give tighter intervals. For a test with no adapter, start with `generic`. If
-`validate` shows gaps, copy `scripts/adapters/generic.py` into a
-test-specific adapter and fix the parsing there. Every adapter emits one
+give tighter intervals.
+
+Use `auto` unless you know better. It recognizes the exam families that have
+their own adapter (SAT, ACT, NY Regents) from the cover page and hands the
+paper to it. For anything else it detects the layout: questions written
+"12.", "Q12" or "Question 12"; choices "A.", "(A)", "a)", "(1)", one per
+line or several on a line; a key in a separate file, in an "Answer Key"
+section, or as "Answer: C" under each question; PDF, Word (.docx) or text.
+It tries each reading of the file and keeps the cleanest parse, and its log
+says which. It is a best effort: read the log and run `validate`. If gaps
+remain, copy `scripts/adapters/generic.py` into a test-specific adapter and
+fix the parsing there. A scanned PDF has no text; OCR it first.
+
+**For someone who does not use a terminal:** `python3 scripts/ret.py serve`
+opens a local page where they drop papers and keys and read the report.
+Files are analyzed on that machine and deleted after each request. Every adapter emits one
 schema (`scripts/ret_common.py`), so everything after ingest is shared.
 
 **By hand, when no adapter fits:**
@@ -267,8 +280,9 @@ redistribute question text.
 - `references/analysis-method.md` — per-question rubric, trap names, fast methods.
 - `references/pattern-library.md` — question archetypes by subject, plus what earlier runs found on the SAT, ACT and NY Regents.
 - `references/answer-dna.md` — Phase 4 method, pitfalls, and results from four exam families. Read before Phase 4.
-- `scripts/ret.py` — `adapters`, `ingest`, `validate`, `run`.
-- `scripts/adapters/` — per-exam parsers; copy `generic.py` for a new exam.
+- `scripts/ret.py` — `adapters`, `ingest`, `validate`, `run`, `serve`.
+- `scripts/adapters/` — `auto` (any layout, delegates to the exam-specific ones) and per-exam parsers; copy `generic.py` for a new exam.
+- `scripts/serve.py`, `assets/ui.html` — the local upload page.
 - `scripts/ret_common.py` — the shared item schema.
 - `scripts/validate_items.py` — parsing-damage checks.
 - `scripts/match_items.py` — pairs questions with key or explanations by content.

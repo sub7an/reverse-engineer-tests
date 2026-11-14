@@ -115,6 +115,9 @@ def main():
         print("\n".join(validate([i for p in a[1:] for i in load_items(p)])[0]))
     elif a[0] == "run":
         cmd_run(a[1:])
+    elif a[0] == "serve":
+        import serve
+        serve.main(a[1:])
     else:
         raise SystemExit(__doc__)
 

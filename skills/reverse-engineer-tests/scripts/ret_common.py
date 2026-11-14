@@ -47,6 +47,17 @@ def to_text(path, layout=False):
     if path.lower().endswith(".pdf"):
         cmd = ["pdftotext"] + (["-layout"] if layout else []) + [path, "-"]
         return subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
+    if path.lower().endswith(".docx"):
+        # A .docx is a zip; the text is in word/document.xml, one <w:p> per
+        # paragraph. Read with the standard library so nothing needs installing.
+        import html
+        import re
+        import zipfile
+        xml = zipfile.ZipFile(path).read("word/document.xml").decode("utf-8", "replace")
+        paras = re.findall(r"<w:p[ >].*?</w:p>|<w:p/>", xml, flags=re.S)
+        clean = lambda p: html.unescape(re.sub(
+            r"<[^>]+>", "", re.sub(r"<w:(tab|br)[^>]*/>", " ", p)))
+        return "\n".join(clean(p) for p in paras)
     return open(path, encoding="utf-8", errors="replace").read()
 
 

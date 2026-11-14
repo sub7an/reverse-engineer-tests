@@ -87,6 +87,21 @@ Give your agent past papers and ask:
 - "Make me 10 practice questions like the hard ones here."
 - "Give me a one-page cheatsheet for this exam."
 
+## No terminal? Use the upload page
+
+```bash
+python3 skills/reverse-engineer-tests/scripts/ret.py serve
+```
+
+Open http://127.0.0.1:8765, drop your past papers and their answer keys
+(PDF, Word or text), and read the report: a gauge for every trick, what the
+survivors are worth, and a rulebook. Papers are analyzed on your machine and
+deleted after each request. Nothing is uploaded anywhere.
+
+To run it in a container: `docker build -t reverse-engineer-tests .` then
+`docker run --rm -p 8765:8765 reverse-engineer-tests`. The app has no
+sign-in and no rate limit; add both before putting it on a public address.
+
 ## Try it in 30 seconds, no exam needed
 
 The demo builds a synthetic exam (invented words, four forms) with one flaw
@@ -96,7 +111,7 @@ planted on purpose, then finds it and prices it.
 python3 examples/make_demo.py examples/demo
 S=skills/reverse-engineer-tests/scripts
 for i in 1 2 3 4; do
-  python3 $S/ret.py ingest generic examples/demo/form$i.txt examples/demo/key$i.txt --form D$i -o /tmp/d$i.json
+  python3 $S/ret.py ingest auto examples/demo/form$i.txt examples/demo/key$i.txt --form D$i -o /tmp/d$i.json
 done
 python3 $S/ret.py run /tmp/d1.json /tmp/d2.json /tmp/d3.json /tmp/d4.json --out /tmp/demo-out
 cat /tmp/demo-out/report.md
@@ -131,9 +146,12 @@ point of measuring.
 | 6. Difficulty | Where officially-hard questions are, and what makes them hard | `difficulty_drivers.py` |
 | 7–8. Output | Practice questions built on the real traps; a one-page cheatsheet | — |
 
-**Adapters included:** `sat-digital`, `act-enhanced`, `cb-qbank` (College
-Board Question Bank), `regents-ela`, `regents-mc`, and `generic` for any
-plainly formatted paper. A new exam costs one adapter; see
+**Any paper:** the `auto` adapter detects the layout of a paper it has never
+seen (numbering style, choice style, choices on one line, key in a separate
+file or inside the paper; PDF, Word or text), and recognizes the exams that
+have their own adapter: `sat-digital`, `act-enhanced`, `regents-ela`,
+`regents-mc`, plus `cb-qbank` for the College Board Question Bank. Unusual
+layouts, two-column pages and scans may still need a dedicated adapter; see
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Limits
